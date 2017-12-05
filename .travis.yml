@@ -1,0 +1,44 @@
+sudo: required
+dist: trusty
+language: generic
+env:
+  global:
+  - DOCKER_VERSION=17.06.0~ce-0~ubuntu
+  - secure: oiy4kT0FcmUqXk7sMtYQpX6/Wxh8EtT4kcEeDnQgzuXf9TI+U2hGD+1CzYbgg3EjINku61avLQQG6TYYb2hgHqN1TeQHWf2H9Wm2za4sw3yU4h1TBnDRwfD4QS6PSsnmLeos4e0XUWUHxMMCGHwEqFKJZrtJqYHndmJOAD1mQrixJNYhebVV/zecwxr6ZrkO9vrK6xAzT6pHi0VDoEe4tXc+dbtBlNjg5skE2oNmLdPcSXW/wj0rB9Qulx8OVuMFw5GsPxP+IMcD/g3sfoQhcGM9QwcLrVzRosde4EDlyiEGP926dhFk9kM4ZI/wlAIQ7+vAM6me3AyiAbSyBn0Kr0Z1BcrMVHxaiUYtJutQjzMcajcOlXJfkQduN3ehM5Yv722ZQdQe/eDKC1PYytUITdsXLITXXTLRxePX/V2Kcn2K7Cz4ArGgvBWWy0g8XAbQCpRrdHpEJP7q/NHIk4/G/ThhgndJ+NWTyplLgUxxIwaUR8IYmjW7RW6HVMnmXQj3KtraZCVGZEEOBtZV9vzrMpg8XKFjy2psxbfjigKFUSNOhfm/+Lhu9tZ17Fo9wQMUP8U1fYBraLMaVY1ZCBDqw22eicCPmA8i9wduqxhR71M9I4UIwjSlSZw0VC5psLpkFweDBKUlFKH3AnMIskQuMP+9RVNkr9Sq0/B6ggdfpHk=
+  - secure: qxFw3zAcv8o3Z6FcLu3SrnC2ZnSVvN99b+PHIjI7arja5VslNpUKyldqHOjzmSW+AbbuzarTMrzrPnHdZVj8e+MK/4oXQ50UyGQLftCunk1Ec7EVfVfOZwF8s38NoH7ifv9cyErgGeXzsgNhJx8wWSUfuXneuoMpEVaCzvCp9XmBm1FUT8edvHqx8ROhvoHi4egGzi2NwcdMMtbHcdb8Cf/UuMAN8lT0WK3pMRRP4oyZe3ucTVusr+TcpRj6Q5E+7QsLwHiFkCFEibV4iOme2AJoSAaKRwzvdlbi3Ga5cwlwMwNXnYZF+U2x4CEaAvJPIe6uDGWeTAd4pjfn38w9dmR4khW9V2eu8zytnPdW/NTqtnKUxXY7TAULBqxfbhGg1v1UvjfiYlvo8cYVNl6G3ETLR78IXd3Ay7NlxN+JablyD7dtm/+HRf7b8bbV72iPkv10mWYow+IcWrzLo++I2OlXsaqOPE+VJxpRmv5cK3EehS8ycfqIDqMZAaQfgDK51kV8T9oGH3tlNmVhNgY87mgtzzkYRgr0TGiNP96AWK1/kcNXB0WqzVTby76e2pQrdg9J3vO5TWzaQ+V7ano4HFOgAShH98t6nEgvlNbWTnV0Jt5WR4sFs7vKn49iuE3ZQpdJG1e/oFjn5D1YrWqch8yJta8o79lMFM/u/G6vkcA=
+before_install:
+- sudo apt-get update
+- apt-cache madison docker-ce
+- sudo apt-get -o Dpkg::Options::="--force-confnew" install -y --force-yes docker-ce=${DOCKER_VERSION}
+- sudo pip install awscli
+script:
+- |
+  docker build -t elasticsearch-ecs .
+  echo $TRAVIS_PULL_REQUEST
+  echo $TRAVIS_BRANCH
+  echo $TRAVIS_PULL_REQUEST_BRANCH
+  export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH;
+    else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+  echo $BRANCH
+  echo $TRAVIS_COMMIT
+  echo $TRAVIS_COMMIT_MESSAGE
+  $(aws ecr get-login --no-include-email --region us-east-1)
+  if [ "$TRAVIS_PULL_REQUEST" != "false" ] || [[ "$TRAVIS_COMMIT_MESSAGE" == *"[travis-tag]"* ]] || [[ -n "${TRAVIS_TAG}" ]]; then
+    docker tag elasticsearch-ecs 084991247458.dkr.ecr.us-east-1.amazonaws.com/elasticsearch-ecs:git-$TRAVIS_COMMIT
+    docker tag elasticsearch-ecs 084991247458.dkr.ecr.us-east-1.amazonaws.com/elasticsearch-ecs:$BRANCH
+    if [[ -n "${TRAVIS_TAG}" ]] ; then
+      docker tag elasticsearch-ecs 084991247458.dkr.ecr.us-east-1.amazonaws.com/elasticsearch-ecs:$TRAVIS_TAG
+      docker push 084991247458.dkr.ecr.us-east-1.amazonaws.com/elasticsearch-ecs:$TRAVIS_TAG
+      docker tag elasticsearch-ecs 084991247458.dkr.ecr.us-east-1.amazonaws.com/elasticsearch-ecs:latest
+      docker push 084991247458.dkr.ecr.us-east-1.amazonaws.com/elasticsearch-ecs:latest
+    fi
+    docker push 084991247458.dkr.ecr.us-east-1.amazonaws.com/elasticsearch-ecs:git-$TRAVIS_COMMIT
+    docker push 084991247458.dkr.ecr.us-east-1.amazonaws.com/elasticsearch-ecs:$BRANCH
+  fi
+  if [[ "${BRANCH}" == "master" ]] ; then
+    docker tag elasticsearch-ecs 084991247458.dkr.ecr.us-east-1.amazonaws.com/elasticsearch-ecs:edge
+    docker push 084991247458.dkr.ecr.us-east-1.amazonaws.com/elasticsearch-ecs:edge
+  fi
+notifications:
+  slack:
+    secure: AiLr7WAieXu7R+WJdOAWZRKnvZ23OdJnV+XCGfkuWcqV1PU1DVvIjoLWZGrHgciFD9NSMxREYb5iCq4OzzEA5jBIHtwXtgYt+jAlUzQCVMNxYQwSmthFnbHzdHEm9yRs5eKaVkJ8AS5eqDnU9YdLVLbupg6R1Cf3kTas7AzL/kRdxVeTnlgBVuv57aEMtCtDzlmyGLIUs1FnhkqOIDhlRxasfABSLj55XC1GKCYhygKrRqO5fbtPGpHEBq54ZGj2RkCMeCpTKdTAqs8dQko2rKByZ0qJ1tp1g9sIV2UX69iKTPT+izt3wZG7XiMUeu0Xmi9lbZbFivDGl/ZzYDj+mVCsT2mfWGTvWA9P9hbsxDYFjQ+uju7z7Yhyg+1DmV6+tAkkHgJQb2nIz6AZ5ydARvbLQnleNSnqkszJrqCil3vhclQ+zQxCBZPmcfg7hhquvEXjFMysYtwiQu7Zuo8ISquLwRxJlgc0nwNp9/G/cR81E7wE+B6FOBBSTIFEhGe0Nys5Zt1s8FKJeg6E4OZu8dUqv9SFgthGWvEM3MhaQu3RIWQffAfHXofKZM161PcwkVbVt2Izh5r8rwopC3Y3ET3GglwNlkFcCF6QmE74I1gjRzWDZnORHvbHMBtMt64EjQEP/zCy036VjlIQWibhRV5jfdOXcEq0510+wPRx9jU=
