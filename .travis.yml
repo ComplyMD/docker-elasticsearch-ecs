@@ -39,6 +39,10 @@ script:
     docker tag elasticsearch-ecs 084991247458.dkr.ecr.us-east-1.amazonaws.com/elasticsearch-ecs:edge
     docker push 084991247458.dkr.ecr.us-east-1.amazonaws.com/elasticsearch-ecs:edge
   fi
+  if [[ "${BRANCH}" == "production" ]] ; then
+    docker tag elasticsearch-ecs 084991247458.dkr.ecr.us-east-1.amazonaws.com/elasticsearch-ecs:production
+    docker push 084991247458.dkr.ecr.us-east-1.amazonaws.com/elasticsearch-ecs:production
+  fi
 notifications:
   slack:
     secure: AiLr7WAieXu7R+WJdOAWZRKnvZ23OdJnV+XCGfkuWcqV1PU1DVvIjoLWZGrHgciFD9NSMxREYb5iCq4OzzEA5jBIHtwXtgYt+jAlUzQCVMNxYQwSmthFnbHzdHEm9yRs5eKaVkJ8AS5eqDnU9YdLVLbupg6R1Cf3kTas7AzL/kRdxVeTnlgBVuv57aEMtCtDzlmyGLIUs1FnhkqOIDhlRxasfABSLj55XC1GKCYhygKrRqO5fbtPGpHEBq54ZGj2RkCMeCpTKdTAqs8dQko2rKByZ0qJ1tp1g9sIV2UX69iKTPT+izt3wZG7XiMUeu0Xmi9lbZbFivDGl/ZzYDj+mVCsT2mfWGTvWA9P9hbsxDYFjQ+uju7z7Yhyg+1DmV6+tAkkHgJQb2nIz6AZ5ydARvbLQnleNSnqkszJrqCil3vhclQ+zQxCBZPmcfg7hhquvEXjFMysYtwiQu7Zuo8ISquLwRxJlgc0nwNp9/G/cR81E7wE+B6FOBBSTIFEhGe0Nys5Zt1s8FKJeg6E4OZu8dUqv9SFgthGWvEM3MhaQu3RIWQffAfHXofKZM161PcwkVbVt2Izh5r8rwopC3Y3ET3GglwNlkFcCF6QmE74I1gjRzWDZnORHvbHMBtMt64EjQEP/zCy036VjlIQWibhRV5jfdOXcEq0510+wPRx9jU=
